@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import subprocess
 from cloudify import ctx
+from cloudify.exceptions import NonRecoverableError
+import re
 
 @operation
 def start(**kwargs):
@@ -25,3 +27,10 @@ def start(**kwargs):
     
     #check if ntp is running, otherwise throw error
     
+    systemctl_status_proc = subprocess.Popen(['systemctl', 'start', 'ntp' ],  stdout=subprocess.PIPE)
+    
+    for line in systemctl_status_proc.stdout.readlines():
+        if re.search('inactive (dead)', line):
+            raise NonRecoverableError("Failed to start NTP")
+    else:
+        ctx.logger.info('NTP installed')
